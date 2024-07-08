@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -11,15 +12,25 @@ const io = socketIo(server, {
   }
 });
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
+let users = {};
 
+io.on('connexion', (socket) => {
+  console.log('Nouveau client connecté');
+  users[socket.id] = `${oldNick}`; 
   socket.on('message', (message) => {
-    io.emit('message', message);
+    if (message.text.startsWith('/nick ')) {
+      const newNick = message.text.split(' ')[1];
+      const oldNick = users[socket.id];
+      users[socket.id] = newNick;
+      io.emit('message', { user: 'Bot', text : `${oldNick} a changé son pseudo en ${newNick}` });
+    } else {
+      io.emit('message', { user: users[socket.id], text: message.text });
+    }
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on('deconnexion', () => {
+    console.log('Client déconnecté');
+    delete users[socket.id];
   });
 });
 

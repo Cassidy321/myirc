@@ -9,13 +9,11 @@ function Chat({ username }) {
   const [availableRooms, setAvailableRooms] = useState([]);
 
   useEffect(() => {
-    // Ecoute des messages
     socket.on('message', (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
     });
 
-    // Récupération des salons disponibles
-    socket.emit('getRooms'); // Émet un événement pour demander les salons disponibles
+    socket.emit('getRooms');
 
     socket.on('rooms', (rooms) => {
       setAvailableRooms(rooms);
