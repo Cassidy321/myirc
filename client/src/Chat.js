@@ -9,6 +9,8 @@ function Chat({ username }) {
   const [availableRooms, setAvailableRooms] = useState([]);
 
   useEffect(() => {
+    socket.emit('setUsername', username);
+
     socket.on('message', (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
     });
@@ -23,7 +25,7 @@ function Chat({ username }) {
       socket.off('message');
       socket.off('rooms');
     };
-  }, []);
+  }, [username]);
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -31,7 +33,7 @@ function Chat({ username }) {
       alert('Please enter a message.');
       return;
     }
-    socket.emit('message', { user: username, text: message });
+    socket.emit('message', { text: message });
     setMessage('');
   };
 
