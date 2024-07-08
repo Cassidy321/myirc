@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:3001');
@@ -8,32 +7,25 @@ function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
-  const navigate = useNavigate();
+  const [currentRoom, setCurrentRoom] = useState('general');
 
   useEffect(() => {
-    if (!username) {
-      navigate('/');
-      return;
-    }
-
     socket.emit('setUsername', username);
+    socket.emit('joinRoom', 'general');
 
-    const messageListener = (msg) => {
+    socket.on('message', (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
-    };
+    });
 
-    const roomsListener = (rooms) => {
+    socket.on('rooms', (rooms) => {
       setAvailableRooms(rooms);
-    };
-
-    socket.on('message', messageListener);
-    socket.on('rooms', roomsListener);
+    });
 
     return () => {
-      socket.off('message', messageListener);
-      socket.off('rooms', roomsListener);
+      socket.off('message');
+      socket.off('rooms');
     };
-  }, [username, navigate]);
+  }, [username]);
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -41,14 +33,29 @@ function Chat({ username }) {
       alert('Please enter a message.');
       return;
     }
-    socket.emit('message', { text: message });
+    socket.emit('message', { text: message, roomName: currentRoom });
     setMessage('');
+  };
+
+  const createRoom = () => {
+    const roomName = prompt('Enter room name:');
+    if (roomName && roomName.trim() !== '') {
+      socket.emit('createRoom', roomName);
+      setCurrentRoom(roomName);
+      setMessages([]);
+    }
+  };
+
+  const joinRoom = (roomName) => {
+    socket.emit('joinRoom', roomName);
+    setCurrentRoom(roomName);
+    setMessages([]);
   };
 
   return (
     <div className="chat-container">
       <div className="chat-box">
-        <h1 className="chat-title">Salon général</h1>
+        <h1 className="chat-title">Salon: {currentRoom}</h1>
         <div className="chat-messages">
           {messages.map((msg, idx) => (
             <div key={idx} className="chat-message">
@@ -71,12 +78,15 @@ function Chat({ username }) {
         </form>
       </div>
       <div className="room-list-container">
-        <h2>Channels disponibles :</h2>
+        <h2>Salons disponibles :</h2>
         <ul className="room-list">
           {availableRooms.map((room, idx) => (
-            <li key={idx}>{room}</li>
+            <li key={idx} onClick={() => joinRoom(room)}>{room}</li>
           ))}
         </ul>
+        <button onClick={createRoom} className="chat-button">
+          Créer un nouveau salon
+        </button>
       </div>
     </div>
   );
