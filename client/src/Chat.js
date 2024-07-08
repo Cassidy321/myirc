@@ -6,13 +6,25 @@ const socket = io('http://localhost:3001');
 function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
 
   useEffect(() => {
+    // Ecoute des messages
     socket.on('message', (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
     });
 
-    return () => socket.off('message');
+    // Récupération des salons disponibles
+    socket.emit('getRooms'); // Émet un événement pour demander les salons disponibles
+
+    socket.on('rooms', (rooms) => {
+      setAvailableRooms(rooms);
+    });
+
+    return () => {
+      socket.off('message');
+      socket.off('rooms');
+    };
   }, []);
 
   const sendMessage = (e) => {
@@ -22,32 +34,44 @@ function Chat({ username }) {
       return;
     }
     socket.emit('message', { user: username, text: message });
-    setMessage(''); // Réinitialisation du champ de message après l'envoi
+    setMessage('');
   };
 
   return (
-    <div className="container mt-4">
-      <div>
-        <h1 className="text-center">Chat</h1>
-        <div className="">
+    <div className="chat-container">
+      <div className="chat-box">
+        <h1 className="chat-title">Salon général</h1>
+        <div className="chat-messages">
           {messages.map((msg, idx) => (
-            <div key={idx}>
+            <div key={idx} className="chat-message">
               <strong>{msg.user}:</strong> {msg.text}
             </div>
           ))}
         </div>
-        <form onSubmit={sendMessage}>
+        <form onSubmit={sendMessage} className="chat-form">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Enter message"
+            className="chat-input"
+            placeholder="Votre message"
             required
           />
-          <button type="submit" className="text-center">
+          <button type="submit" className="chat-button">
             Envoyer
           </button>
         </form>
+      </div>
+      <div className="room-list-container">
+        <h2>Salons disponibles :</h2>
+        <ul className="room-list">
+          {availableRooms.map((room, idx) => (
+            <li key={idx}>{room}</li>
+          ))}
+          <li>Room 1</li>
+          <li>Room 2</li>
+          <li>Room 3</li>
+        </ul>
       </div>
     </div>
   );
