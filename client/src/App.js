@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './Login';
 import Chat from './Chat';
 import './index.css';
 
 function App() {
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
+
+  useEffect(() => {
+    localStorage.setItem('username', username);
+  }, [username]);
 
   return (
     <Router>

@@ -17,11 +17,14 @@ io.on('connection', (socket) => {
   console.log('New client connected');
 
   socket.on('setUsername', (username) => {
-    users[socket.id] = username;
-    io.emit('message', { user: 'Bot', text : `${username} est arrivé sur le serveur` });
+    if (!users[socket.id]) {
+      users[socket.id] = username;
+      io.emit('message', { user: 'Bot', text: `${username} est arrivé sur le serveur` });
+    }
   });
 
   socket.on('message', (message) => {
+    console.log(`Message received from ${socket.id}: ${message.text}`);
     if (message.text.startsWith('/nick ')) {
       const newNick = message.text.split(' ')[1];
       const oldNick = users[socket.id];
@@ -36,7 +39,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const username = users[socket.id];
     console.log(`User disconnected: ${username}`);
-    io.emit('message', { user: 'Bot', text : `${username} a quitté le serveur` });
+    io.emit('message', { user: 'Bot', text: `${username} a quitté le serveur` });
     delete users[socket.id];
   });
 });

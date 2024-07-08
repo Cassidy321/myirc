@@ -13,12 +13,13 @@ function Login({ setUsername }) {
       return;
     }
     setUsername(name);
+    localStorage.setItem('username', name);
     navigate("/chat");
   };
 
   return (
     <div className="login">
-        <img src={disc} />
+      <img src={disc} />
       <div className="">
         <form onSubmit={handleSubmit}>
           <h2 className="">Entrez votre pseudo !</h2>

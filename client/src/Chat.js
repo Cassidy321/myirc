@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:3001');
@@ -7,25 +8,32 @@ function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (!username) {
+      navigate('/');
+      return;
+    }
+
     socket.emit('setUsername', username);
 
-    socket.on('message', (msg) => {
+    const messageListener = (msg) => {
       setMessages((prevMessages) => [...prevMessages, msg]);
-    });
+    };
 
-    socket.emit('getRooms');
-
-    socket.on('rooms', (rooms) => {
+    const roomsListener = (rooms) => {
       setAvailableRooms(rooms);
-    });
+    };
+
+    socket.on('message', messageListener);
+    socket.on('rooms', roomsListener);
 
     return () => {
-      socket.off('message');
-      socket.off('rooms');
+      socket.off('message', messageListener);
+      socket.off('rooms', roomsListener);
     };
-  }, [username]);
+  }, [username, navigate]);
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -63,14 +71,11 @@ function Chat({ username }) {
         </form>
       </div>
       <div className="room-list-container">
-        <h2>Salons disponibles :</h2>
+        <h2>Channels disponibles :</h2>
         <ul className="room-list">
           {availableRooms.map((room, idx) => (
             <li key={idx}>{room}</li>
           ))}
-          <li>Room 1</li>
-          <li>Room 2</li>
-          <li>Room 3</li>
         </ul>
       </div>
     </div>
