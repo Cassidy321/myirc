@@ -161,3 +161,15 @@ html {
 .room-list li:hover {
   color: #007bff;
 }
+
+.users-list-container {
+  position: absolute;
+  top: 0.5;
+  right: 0;
+  margin-right: 20px;
+  width: 200px;
+  padding: 20px;
+  border-radius: 10px;
+  background: #ffffff;
+  height: 70vh;
+}

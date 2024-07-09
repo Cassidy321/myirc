@@ -8,6 +8,7 @@ function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
+  const [connectedUsers, setConnectedUsers] = useState([]);
   const [currentRoom, setCurrentRoom] = useState('general');
   const navigate = useNavigate();
 
@@ -28,9 +29,14 @@ function Chat({ username }) {
       setAvailableRooms(rooms);
     });
 
+    socket.on('connectedUsers', (users) => {
+      setConnectedUsers(users);
+    });
+
     return () => {
       socket.off('message');
       socket.off('rooms');
+      socket.off('connectedUsers');
     };
   }, [username, navigate]);
 
@@ -59,22 +65,30 @@ function Chat({ username }) {
       socket.emit('listRooms', searchString);
     } else if (message === '/list') {
       socket.emit('listRooms', '');
+    } else if (message.startsWith('/join ')) {
+      const roomName = message.split(' ')[1];
+      if (roomName) {
+        socket.emit('joinRoom', roomName);
+        setCurrentRoom(roomName);
+        setMessages([]);
+      }
+    } else if (message.startsWith('/leave ')) {
+      const roomName = message.split(' ')[1];
+      if (roomName) {
+        socket.emit('leaveRoom', roomName);
+        setCurrentRoom('general');
+        setMessages([]);
+      }
     } else {
       socket.emit('message', { text: message, roomName: currentRoom });
     }
     setMessage('');
   };
 
-  const joinRoom = (roomName) => {
-    socket.emit('joinRoom', roomName);
-    setCurrentRoom(roomName);
-    setMessages([]);
-  };
-
   return (
     <div className="chat-container">
       <div className="chat-box">
-        <h1 className="chat-title">Channel: {currentRoom}</h1>
+        <h1 className="chat-title">Salon: {currentRoom}</h1>
         <div className="chat-messages">
           {messages.map((msg, idx) => (
             <div key={idx} className="chat-message">
@@ -97,10 +111,18 @@ function Chat({ username }) {
         </form>
       </div>
       <div className="room-list-container">
-        <h2>Channels disponibles :</h2>
+        <h2>Salons disponibles :</h2>
         <ul className="room-list">
           {availableRooms.map((room, idx) => (
-            <li key={idx} onClick={() => joinRoom(room)}>{room}</li>
+            <li key={idx}>{room}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="users-list-container">
+        <h2>Utilisateurs connectés :</h2>
+        <ul className="users-list">
+          {connectedUsers.map((user, idx) => (
+            <li key={idx}>{user}</li>
           ))}
         </ul>
       </div>

@@ -14,6 +14,11 @@ const io = socketIo(server, {
 let users = {};
 let rooms = ['general'];
 
+const updateConnectedUsers = () => {
+  const connectedUsers = Object.values(users);
+  io.emit('connectedUsers', connectedUsers);
+};
+
 io.on('connection', (socket) => {
   console.log('New client connected');
 
@@ -22,6 +27,7 @@ io.on('connection', (socket) => {
       users[socket.id] = username;
       io.emit('message', { user: 'Bot', text: `${username} est arrivé sur le serveur` });
       io.emit('rooms', rooms);
+      updateConnectedUsers();
     }
   });
 
@@ -43,6 +49,11 @@ io.on('connection', (socket) => {
     } else {
       socket.emit('message', { user: 'Bot', text: `Le salon ${roomName} n'existe pas.` });
     }
+  });
+
+  socket.on('leaveRoom', (roomName) => {
+    socket.leave(roomName);
+    io.to(roomName).emit('message', { user: 'Bot', text: `${users[socket.id]} a quitté le salon ${roomName}` });
   });
 
   socket.on('deleteRoom', (roomName) => {
@@ -67,6 +78,7 @@ io.on('connection', (socket) => {
       const oldNick = users[socket.id];
       users[socket.id] = newNick;
       io.emit('message', { user: 'Bot', text: `${oldNick} a changé son pseudo en ${newNick}` });
+      updateConnectedUsers();
     } else if (message.text.startsWith('/create ')) {
       const roomName = message.text.split(' ')[1];
       if (rooms.includes(roomName)) {
@@ -89,7 +101,19 @@ io.on('connection', (socket) => {
     } else if (message.text.startsWith('/list')) {
       const searchString = message.text.split(' ')[1] || '';
       const filteredRooms = rooms.filter(room => room.includes(searchString));
-      socket.emit('message', { user: 'Bot', text: `Channels disponibles: ${filteredRooms.join(', ')}` });
+      socket.emit('message', { user: 'Bot', text: `Salons disponibles: ${filteredRooms.join(', ')}` });
+    } else if (message.text.startsWith('/join ')) {
+      const roomName = message.text.split(' ')[1];
+      if (rooms.includes(roomName)) {
+        socket.join(roomName);
+        io.to(roomName).emit('message', { user: 'Bot', text: `${user} a rejoint le salon ${roomName}` });
+      } else {
+        socket.emit('message', { user: 'Bot', text: `Le salon ${roomName} n'existe pas.` });
+      }
+    } else if (message.text.startsWith('/leave ')) {
+      const roomName = message.text.split(' ')[1];
+      socket.leave(roomName);
+      io.to(roomName).emit('message', { user: 'Bot', text: `${user} a quitté le salon ${roomName}` });
     } else {
       const roomName = message.roomName || 'general';
       io.to(roomName).emit('message', { user: user, text: message.text });
@@ -101,6 +125,7 @@ io.on('connection', (socket) => {
     console.log(`User disconnected: ${username}`);
     io.emit('message', { user: 'Bot', text: `${username} a quitté le serveur` });
     delete users[socket.id];
+    updateConnectedUsers();
   });
 });
 
