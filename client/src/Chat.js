@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEdit } from '@fortawesome/free-solid-svg-icons';
 
 const socket = io('http://localhost:3001');
 
@@ -8,8 +10,11 @@ function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
+  const [userCreatedRooms, setUserCreatedRooms] = useState([]);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [currentRoom, setCurrentRoom] = useState('general');
+  const [renamingRoom, setRenamingRoom] = useState(null);
+  const [newRoomName, setNewRoomName] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +34,10 @@ function Chat({ username }) {
       setAvailableRooms(rooms);
     });
 
+    socket.on('userCreatedRooms', (rooms) => {
+      setUserCreatedRooms(rooms);
+    });
+
     socket.on('connectedUsers', (users) => {
       setConnectedUsers(users);
     });
@@ -36,6 +45,7 @@ function Chat({ username }) {
     return () => {
       socket.off('message');
       socket.off('rooms');
+      socket.off('userCreatedRooms');
       socket.off('connectedUsers');
     };
   }, [username, navigate]);
@@ -87,6 +97,22 @@ function Chat({ username }) {
     setMessage('');
   };
 
+  const startRenamingRoom = (roomName) => {
+    setRenamingRoom(roomName);
+    setNewRoomName(roomName);
+  };
+
+  const renameRoom = (e) => {
+    e.preventDefault();
+    if (newRoomName.trim() === '') {
+      alert('veuillez entrer un nouveau nom de salon');
+      return;
+    }
+    socket.emit('renameRoom', { oldName: renamingRoom, newName: newRoomName });
+    setRenamingRoom(null);
+    setNewRoomName('');
+  };
+
   return (
     <div className="chat-container">
       <div className="chat-box">
@@ -116,7 +142,34 @@ function Chat({ username }) {
         <h2>Channels disponibles :</h2>
         <ul className="room-list">
           {availableRooms.map((room, idx) => (
-            <li key={idx}>{room}</li>
+            <li key={idx}>
+              {renamingRoom === room ? (
+                <form onSubmit={renameRoom} className="rename-form">
+                  <input
+                    type="text"
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    className="rename-input"
+                    placeholder="Nouveau nom"
+                    required
+                  />
+                  <button type="submit" className="rename-button">
+                    Renommer
+                  </button>
+                </form>
+              ) : (
+                <>
+                  {room} {' '} {}
+                  {userCreatedRooms.includes(room) && (
+                    <FontAwesomeIcon
+                      icon={faEdit}
+                      onClick={() => startRenamingRoom(room)}
+                      className="edit-icon"
+                    />
+                  )}
+                </>
+              )}
+            </li>
           ))}
         </ul>
       </div>
