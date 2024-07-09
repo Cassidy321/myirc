@@ -43,7 +43,7 @@ function Chat({ username }) {
   const sendMessage = (e) => {
     e.preventDefault();
     if (message.trim() === '') {
-      alert('Please enter a message.');
+      alert('veuillez entrer un message');
       return;
     }
     if (message.startsWith('/create ')) {
@@ -79,6 +79,8 @@ function Chat({ username }) {
         setCurrentRoom('general');
         setMessages([]);
       }
+    } else if (message === '/users') {
+      socket.emit('listUsers', currentRoom);
     } else {
       socket.emit('message', { text: message, roomName: currentRoom });
     }
@@ -88,7 +90,7 @@ function Chat({ username }) {
   return (
     <div className="chat-container">
       <div className="chat-box">
-        <h1 className="chat-title">Salon: {currentRoom}</h1>
+        <h1 className="chat-title">Channel : {currentRoom}</h1>
         <div className="chat-messages">
           {messages.map((msg, idx) => (
             <div key={idx} className="chat-message">
@@ -111,7 +113,7 @@ function Chat({ username }) {
         </form>
       </div>
       <div className="room-list-container">
-        <h2>Salons disponibles :</h2>
+        <h2>Channels disponibles :</h2>
         <ul className="room-list">
           {availableRooms.map((room, idx) => (
             <li key={idx}>{room}</li>
